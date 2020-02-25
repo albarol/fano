@@ -1,3 +1,5 @@
+#ifndef __FANO_CORE__
+#define __FANO_CORE__
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,3 +10,5 @@
 
 void die(const char *s);
 void refreshScreen();
+
+#endif

@@ -1,3 +1,5 @@
+#ifndef __FANO_TERMINAL__
+#define __FANO_TERMINAL__
 
 #include <stdlib.h>
 #include <termios.h>
@@ -8,3 +10,5 @@
 
 void Terminal_EnableRawMode();
 void Terminal_DisableRawMode();
+
+#endif

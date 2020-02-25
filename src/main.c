@@ -12,6 +12,7 @@
 
 int main() {
   Terminal_EnableRawMode();
+  Editor_Init();
 
   while (1) {
     Editor_RefreshScreen();
