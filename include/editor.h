@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include "config.h"
+#include "cons.h"
 #include "core.h"
 
 void Editor_Init();
@@ -17,5 +18,6 @@ void Editor_RefreshScreen();
 
 int Editor_GetWindowSize(int *rows, int *cols);
 int Editor_GetCursorPosition(int *rows, int *cols);
+void Editor_MoveCursor(char key);
 
 #endif

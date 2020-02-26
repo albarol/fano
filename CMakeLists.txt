@@ -26,6 +26,7 @@ set(FANO_SOURCES
 
 set(FANO_HEADERS
     include/config.h
+    include/cons.h
     include/core.h
     include/editor.h
     include/terminal.h

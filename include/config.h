@@ -5,6 +5,7 @@
 
 
 struct editorConfig {
+  int cx, cy;
   int screenRows;
   int screenCols;
   struct termios orig_termios;
