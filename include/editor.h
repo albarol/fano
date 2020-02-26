@@ -21,7 +21,8 @@ void Editor_Open();
 
 void Editor_AppendRow(char *s, size_t len);
 void Editor_UpdateRow(editorRow *row);
-void Editor_DrawRows();
+void Editor_DrawRows(struct buffer *pBuffer);
+void Editor_DrawStatusBar(struct buffer *pBuffer);
 void Editor_ProcessKeyPress();
 int Editor_ReadKey();
 void Editor_RefreshScreen();

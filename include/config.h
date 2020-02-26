@@ -20,6 +20,7 @@ struct editorConfig {
   int screenCols;
   int numRows;
   editorRow* rows;
+  char* filename;
   struct termios orig_termios;
 };
 

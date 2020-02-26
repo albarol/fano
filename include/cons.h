@@ -10,6 +10,7 @@
 
 #define EDITOR_SCAPE '\x1b' // ESCAPE
 #define EDITOR_EL "\x1b[K" // ERASE IN LINE
+#define EDITOR_SGR "\x1b[7m" // SELECT GRAPHIC RENDITION
 #define EDITOR_SM "\x1b[?25h" // SET MODE
 #define EDITOR_RM "\x1b[?25l" // RESET MODE
 

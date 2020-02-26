@@ -8,11 +8,16 @@ void Editor_Init() {
   E.rowOff = 0;
   E.numRows = 0;
   E.rows = NULL;
+  E.filename = NULL;
 
   if (Editor_GetWindowSize(&E.screenRows, &E.screenCols) == -1) die("GetWindowSize");
+  E.screenRows -= 1;
 }
 
 void Editor_Open(char* filename) {
+  free(E.filename);
+  E.filename = strdup(filename);
+
   FILE *fp = fopen(filename, "r");
   if (!fp) die("fopen");
 
@@ -82,10 +87,33 @@ void Editor_DrawRows(struct buffer *pBuffer) {
     }
 
     Buffer_Append(pBuffer, EDITOR_EL, 3);
-    if (y < E.screenRows - 1) {
-      Buffer_Append(pBuffer, "\r\n", 2);
+    Buffer_Append(pBuffer, "\r\n", 2);
+  }
+}
+
+void Editor_DrawStatusBar(struct buffer *pBuffer) {
+  Buffer_Append(pBuffer, EDITOR_SGR, 4);
+
+  char status[80], rStatus[80];
+  int len = snprintf(status, sizeof(status), "%.20s - %d lines",
+      E.filename ? E.filename : "[No Name]", E.numRows);
+
+  int rLen = snprintf(rStatus, sizeof(rStatus), "%d/%d",
+      E.cy + 1, E.numRows);
+
+  if (len > E.screenCols) len = E.screenCols;
+  Buffer_Append(pBuffer, status, len);
+
+  while (len < E.screenCols) {
+    if (E.screenCols - len == rLen) {
+      Buffer_Append(pBuffer, rStatus, rLen);
+      break;
+    } else {
+      Buffer_Append(pBuffer, " ", 1);
+      len++;
     }
   }
+  Buffer_Append(pBuffer, "\x1b[ma", 3);
 }
 
 void Editor_ProcessKeyPress() {
@@ -189,6 +217,7 @@ void Editor_RefreshScreen() {
   Buffer_Append(&pBuffer, "\x1b[H", 3);
 
   Editor_DrawRows(&pBuffer);
+  Editor_DrawStatusBar(&pBuffer);
 
   char buf[32];
   snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy - E.rowOff) + 1, (E.cx - E.colOff) + 1);
