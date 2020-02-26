@@ -4,6 +4,7 @@
 void Editor_Init() {
   E.cx = 0;
   E.cy = 0;
+  E.colOff = 0;
   E.rowOff = 0;
   E.numRows = 0;
   E.rows = NULL;
@@ -16,13 +17,13 @@ void Editor_Open(char* filename) {
   if (!fp) die("fopen");
 
   char *line = NULL;
-  size_t linecap = 0;
-  ssize_t linelen;
+  size_t lineCap = 0;
+  ssize_t lineLen;
 
-  while ((linelen = getline(&line, &linecap, fp)) != -1) {
-    while (linelen > 0 && (line[linelen - 1] == '\n' || line[linelen - 1] == '\r'))
-      linelen--;
-    Editor_AppendRow(line, linelen);
+  while ((lineLen = getline(&line, &lineCap, fp)) != -1) {
+    while (lineLen > 0 && (line[lineLen - 1] == '\n' || line[lineLen - 1] == '\r'))
+      lineLen--;
+    Editor_AppendRow(line, lineLen);
   }
   free(line);
   fclose(fp);
@@ -36,7 +37,35 @@ void Editor_AppendRow(char *s, size_t len) {
     E.rows[at].chars = malloc(len + 1);
     memcpy(E.rows[at].chars, s, len);
     E.rows[at].chars[len] = '\0';
+
+    E.rows[at].renderSize = 0;
+    E.rows[at].render = NULL;
+
+    Editor_UpdateRow(&E.rows[at]);
+
     E.numRows++;
+}
+
+void Editor_UpdateRow(editorRow *row) {
+  int tabs = 0;
+  int j;
+  for (j = 0; j < row->size; j++)
+    if (row->chars[j] == '\t') tabs++;
+
+  free(row->render);
+  row->render = malloc(row->size + tabs*(FANO_TAB_STOP - 1) + 1);
+
+  int idx = 0;
+  for (j = 0; j < row->size; j++) {
+    if (row->chars[j] == '\t') {
+      row->render[idx++] = ' ';
+      while (idx % FANO_TAB_STOP != 0) row->render[idx++] = ' ';
+    } else {
+      row->render[idx++] = row->chars[j];
+    }
+  }
+  row->render[idx] = '\0';
+  row->renderSize = idx;
 }
 
 void Editor_DrawRows(struct buffer *pBuffer) {
@@ -46,9 +75,10 @@ void Editor_DrawRows(struct buffer *pBuffer) {
     if (fileRow >= E.numRows) {
         if (E.numRows == 0) Buffer_Append(pBuffer, "~", 1);
     } else {
-      int len = E.rows[fileRow].size;
+      int len = E.rows[fileRow].renderSize - E.colOff;
+      if (len < 0) len = 0;
       if (len > E.screenCols) len = E.screenCols;
-      Buffer_Append(pBuffer, E.rows[fileRow].chars, len);
+      Buffer_Append(pBuffer, &E.rows[fileRow].render[E.colOff], len);
     }
 
     Buffer_Append(pBuffer, EDITOR_EL, 3);
@@ -72,12 +102,20 @@ void Editor_ProcessKeyPress() {
       break;
 
     case END_KEY:
-      E.cx = E.screenCols - 1;
+      if (E.cy < E.numRows)
+        E.cx = E.rows[E.cy].size;
       break;
 
     case PAGE_UP:
     case PAGE_DOWN:
       {
+        if (c == PAGE_UP) {
+          E.cy = E.rowOff;
+        } else if (c == PAGE_DOWN) {
+          E.cy = E.rowOff + E.screenRows + 1;
+          if (E.cy > E.numRows) E.cy = E.numRows;
+        }
+
         int times = E.screenRows;
         while (times--)
           Editor_MoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
@@ -153,7 +191,7 @@ void Editor_RefreshScreen() {
   Editor_DrawRows(&pBuffer);
 
   char buf[32];
-  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy - E.rowOff) + 1, E.cx + 1);
+  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy - E.rowOff) + 1, (E.cx - E.colOff) + 1);
   Buffer_Append(&pBuffer, buf, strlen(buf));
 
   Buffer_Append(&pBuffer, EDITOR_SM, 6);
@@ -197,15 +235,23 @@ int Editor_GetCursorPosition(int *rows, int *cols) {
 }
 
 void Editor_MoveCursor(int key) {
+  editorRow *row = (E.cy >= E.numRows) ? NULL : &E.rows[E.cy];
+
   switch (key) {
     case ARROW_LEFT:
       if (E.cx != 0) {
         E.cx--;
+      } else if (E.cy > 0) {
+        E.cy--;
+        E.cx = E.rows[E.cy].size;
       }
       break;
     case ARROW_RIGHT:
-      if (E.cx != E.screenCols - 1) {
+      if (row && E.cx < row->size) {
         E.cx++;
+      } else if (row && E.cx == row->size) {
+        E.cy++;
+        E.cx = 0;
       }
       break;
     case ARROW_UP:
@@ -219,6 +265,12 @@ void Editor_MoveCursor(int key) {
       }
       break;
   }
+
+  row = (E.cy >= E.numRows) ? NULL : &E.rows[E.cy];
+  int rowLen = row ? row->size : 0;
+  if (E.cx > rowLen) {
+    E.cx = rowLen;
+  }
 }
 
 void Editor_Scroll() {
@@ -227,5 +279,11 @@ void Editor_Scroll() {
   }
   if (E.cy >= E.rowOff + E.screenRows) {
     E.rowOff = E.cy - E.screenRows + 1;
+  }
+  if (E.cx < E.colOff) {
+    E.colOff = E.cx;
+  }
+  if (E.cx >= E.colOff + E.screenCols) {
+    E.colOff = E.cx - E.screenCols + 1;
   }
 }

@@ -20,6 +20,7 @@ void Editor_Init();
 void Editor_Open();
 
 void Editor_AppendRow(char *s, size_t len);
+void Editor_UpdateRow(editorRow *row);
 void Editor_DrawRows();
 void Editor_ProcessKeyPress();
 int Editor_ReadKey();
