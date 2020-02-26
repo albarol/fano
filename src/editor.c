@@ -4,13 +4,50 @@
 void Editor_Init() {
   E.cx = 0;
   E.cy = 0;
+  E.numRows = 0;
+  E.rows = NULL;
+
   if (Editor_GetWindowSize(&E.screenRows, &E.screenCols) == -1) die("GetWindowSize");
+}
+
+void Editor_Open(char* filename) {
+  FILE *fp = fopen(filename, "r");
+  if (!fp) die("fopen");
+
+  char *line = NULL;
+  size_t linecap = 0;
+  ssize_t linelen;
+
+  while ((linelen = getline(&line, &linecap, fp)) != -1) {
+    while (linelen > 0 && (line[linelen - 1] == '\n' || line[linelen - 1] == '\r'))
+      linelen--;
+    Editor_AppendRow(line, linelen);
+  }
+  free(line);
+  fclose(fp);
+}
+
+void Editor_AppendRow(char *s, size_t len) {
+    E.rows = realloc(E.rows, sizeof(editorRow) * (E.numRows + 1));
+
+    int at = E.numRows;
+    E.rows[at].size = len;
+    E.rows[at].chars = malloc(len + 1);
+    memcpy(E.rows[at].chars, s, len);
+    E.rows[at].chars[len] = '\0';
+    E.numRows++;
 }
 
 void Editor_DrawRows(struct buffer *pBuffer) {
   int y;
   for (y = 0; y < E.screenRows; y++) {
-    Buffer_Append(pBuffer, "~", 1);
+    if (y >= E.numRows) {
+        if (E.numRows == 0) Buffer_Append(pBuffer, "~", 1);
+    } else {
+      int len = E.rows[y].size;
+      if (len > E.screenCols) len = E.screenCols;
+      Buffer_Append(pBuffer, E.rows[y].chars, len);
+    }
 
     Buffer_Append(pBuffer, EDITOR_EL, 3);
     if (y < E.screenRows - 1) {
@@ -73,6 +110,7 @@ int Editor_ReadKey() {
         if (seq[2] == '~') {
           switch (seq[1]) {
             case '1': return HOME_KEY;
+            case '3': return DEL_KEY;
             case '4': return END_KEY;
             case '5': return PAGE_UP;
             case '6': return PAGE_DOWN;
