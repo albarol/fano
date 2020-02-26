@@ -13,11 +13,11 @@ void Editor_Init();
 
 void Editor_DrawRows();
 void Editor_ProcessKeyPress();
-char Editor_ReadKey();
+int Editor_ReadKey();
 void Editor_RefreshScreen();
 
 int Editor_GetWindowSize(int *rows, int *cols);
 int Editor_GetCursorPosition(int *rows, int *cols);
-void Editor_MoveCursor(char key);
+void Editor_MoveCursor(int key);
 
 #endif
