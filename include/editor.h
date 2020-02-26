@@ -28,5 +28,6 @@ void Editor_RefreshScreen();
 int Editor_GetWindowSize(int *rows, int *cols);
 int Editor_GetCursorPosition(int *rows, int *cols);
 void Editor_MoveCursor(int key);
+void Editor_Scroll();
 
 #endif

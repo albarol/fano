@@ -4,6 +4,7 @@
 void Editor_Init() {
   E.cx = 0;
   E.cy = 0;
+  E.rowOff = 0;
   E.numRows = 0;
   E.rows = NULL;
 
@@ -41,12 +42,13 @@ void Editor_AppendRow(char *s, size_t len) {
 void Editor_DrawRows(struct buffer *pBuffer) {
   int y;
   for (y = 0; y < E.screenRows; y++) {
-    if (y >= E.numRows) {
+    int fileRow = y + E.rowOff;
+    if (fileRow >= E.numRows) {
         if (E.numRows == 0) Buffer_Append(pBuffer, "~", 1);
     } else {
-      int len = E.rows[y].size;
+      int len = E.rows[fileRow].size;
       if (len > E.screenCols) len = E.screenCols;
-      Buffer_Append(pBuffer, E.rows[y].chars, len);
+      Buffer_Append(pBuffer, E.rows[fileRow].chars, len);
     }
 
     Buffer_Append(pBuffer, EDITOR_EL, 3);
@@ -141,6 +143,8 @@ int Editor_ReadKey() {
 }
 
 void Editor_RefreshScreen() {
+  Editor_Scroll();
+
   struct buffer pBuffer = BUFFER_INIT;
 
   Buffer_Append(&pBuffer, EDITOR_RM, 6);
@@ -149,7 +153,7 @@ void Editor_RefreshScreen() {
   Editor_DrawRows(&pBuffer);
 
   char buf[32];
-  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy + 1, E.cx + 1);
+  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy - E.rowOff) + 1, E.cx + 1);
   Buffer_Append(&pBuffer, buf, strlen(buf));
 
   Buffer_Append(&pBuffer, EDITOR_SM, 6);
@@ -210,9 +214,18 @@ void Editor_MoveCursor(int key) {
       }
       break;
     case ARROW_DOWN:
-      if (E.cy != E.screenRows - 1) {
+      if (E.cy != E.numRows) {
         E.cy++;
       }
       break;
+  }
+}
+
+void Editor_Scroll() {
+  if (E.cy < E.rowOff) {
+    E.rowOff = E.cy;
+  }
+  if (E.cy >= E.rowOff + E.screenRows) {
+    E.rowOff = E.cy - E.screenRows + 1;
   }
 }
