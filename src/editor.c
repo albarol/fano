@@ -10,7 +10,7 @@ void Editor_Init() {
   E.rows = NULL;
   E.filename = NULL;
 
-  if (Editor_GetWindowSize(&E.screenRows, &E.screenCols) == -1) die("GetWindowSize");
+  if (Screen_GetWindowSize(&E.screenRows, &E.screenCols) == -1) die("GetWindowSize");
   E.screenRows -= 1;
 }
 
@@ -73,6 +73,46 @@ void Editor_UpdateRow(editorRow *row) {
   row->renderSize = idx;
 }
 
+void Editor_FreeRow(editorRow *row) {
+  free(row->render);
+  free(row->chars);
+}
+
+void Editor_AppendCharAtRow(editorRow *row, int at, int c) {
+  if (at < 0 || at > row->size) at = row->size;
+  row->chars = realloc(row->chars, row->size + 2);
+  memmove(&row->chars[at + 1], &row->chars[at], row->size - at + 1);
+  row->size++;
+  row->chars[at] = c;
+  Editor_UpdateRow(row);
+}
+
+
+void Editor_RemoveCharAtRow(editorRow *row, int at) {
+  if (at < 0 || at >= row->size) return;
+  memmove(&row->chars[at], &row->chars[at + 1], row->size - at);
+  row->size--;
+  Editor_UpdateRow(row);
+}
+
+void Editor_InsertChar(int c) {
+  if (E.cy == E.numRows) {
+    Editor_AppendRow("", 0);
+  }
+  Editor_AppendCharAtRow(&E.rows[E.cy], E.cx, c);
+  E.cx++;
+}
+
+void Editor_RemoveChar() {
+  if (E.cy == E.numRows) return;
+
+  editorRow *row = &E.rows[E.cy];
+  if (E.cx > 0) {
+    Editor_RemoveCharAtRow(row, E.cx - 1);
+    E.cx--;
+  }
+}
+
 void Editor_DrawRows(struct buffer *pBuffer) {
   int y;
   for (y = 0; y < E.screenRows; y++) {
@@ -120,6 +160,10 @@ void Editor_ProcessKeyPress() {
   int c = Editor_ReadKey();
 
   switch (c) {
+    case '\r':
+      // TODO
+      break;
+
     case CTRL_KEY('q'):
 	  refreshScreen();
       exit(0);
@@ -134,6 +178,13 @@ void Editor_ProcessKeyPress() {
         E.cx = E.rows[E.cy].size;
       break;
 
+    case BACKSPACE:
+    case CTRL_KEY('h'):
+    case DEL_KEY:
+      if (c == DEL_KEY) Screen_MoveCursor(ARROW_RIGHT);
+      Editor_RemoveChar();
+      break;
+
     case PAGE_UP:
     case PAGE_DOWN:
       {
@@ -146,7 +197,7 @@ void Editor_ProcessKeyPress() {
 
         int times = E.screenRows;
         while (times--)
-          Editor_MoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
+          Screen_MoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
       }
       break;
 
@@ -154,7 +205,15 @@ void Editor_ProcessKeyPress() {
     case ARROW_UP:
     case ARROW_DOWN:
     case ARROW_RIGHT:
-      Editor_MoveCursor(c);
+      Screen_MoveCursor(c);
+      break;
+
+    case CTRL_KEY('l'):
+    case '\x1b':
+      break;
+
+    default:
+      Editor_InsertChar(c);
       break;
   }
 }
@@ -206,113 +265,4 @@ int Editor_ReadKey() {
   }
 
   return c;
-}
-
-void Editor_RefreshScreen() {
-  Editor_Scroll();
-
-  struct buffer pBuffer = BUFFER_INIT;
-
-  Buffer_Append(&pBuffer, EDITOR_RM, 6);
-  Buffer_Append(&pBuffer, "\x1b[H", 3);
-
-  Editor_DrawRows(&pBuffer);
-  Editor_DrawStatusBar(&pBuffer);
-
-  char buf[32];
-  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", (E.cy - E.rowOff) + 1, (E.cx - E.colOff) + 1);
-  Buffer_Append(&pBuffer, buf, strlen(buf));
-
-  Buffer_Append(&pBuffer, EDITOR_SM, 6);
-
-  write(STDOUT_FILENO, pBuffer.value, pBuffer.len);
-
-  Buffer_Free(&pBuffer);
-}
-
-
-int Editor_GetWindowSize(int *rows, int *cols) {
-  struct winsize ws;
-
-  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
-    if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12) return -1;
-    return Editor_GetCursorPosition(rows, cols);
-  } else {
-    *rows = ws.ws_row;
-    *cols = ws.ws_col;
-    return 0;
-  }
-}
-
-int Editor_GetCursorPosition(int *rows, int *cols) {
-  char buf[32];
-  unsigned int i = 0;
-
-  if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4) return -1;
-
-  while (i < sizeof(buf) -1) {
-    if (read(STDIN_FILENO, &buf[i], 1) != 1) break;
-    if (buf[i] == 'R') break;
-    i++;
-  }
-  buf[i] = '\0';
-
-  if (buf[0] != '\x1b' || buf[1] != '[') return -1;
-  if (sscanf(&buf[2], "%d;%d", rows, cols) != 2) return -1;
-
-  return 0;
-}
-
-void Editor_MoveCursor(int key) {
-  editorRow *row = (E.cy >= E.numRows) ? NULL : &E.rows[E.cy];
-
-  switch (key) {
-    case ARROW_LEFT:
-      if (E.cx != 0) {
-        E.cx--;
-      } else if (E.cy > 0) {
-        E.cy--;
-        E.cx = E.rows[E.cy].size;
-      }
-      break;
-    case ARROW_RIGHT:
-      if (row && E.cx < row->size) {
-        E.cx++;
-      } else if (row && E.cx == row->size) {
-        E.cy++;
-        E.cx = 0;
-      }
-      break;
-    case ARROW_UP:
-      if (E.cy != 0) {
-        E.cy--;
-      }
-      break;
-    case ARROW_DOWN:
-      if (E.cy != E.numRows) {
-        E.cy++;
-      }
-      break;
-  }
-
-  row = (E.cy >= E.numRows) ? NULL : &E.rows[E.cy];
-  int rowLen = row ? row->size : 0;
-  if (E.cx > rowLen) {
-    E.cx = rowLen;
-  }
-}
-
-void Editor_Scroll() {
-  if (E.cy < E.rowOff) {
-    E.rowOff = E.cy;
-  }
-  if (E.cy >= E.rowOff + E.screenRows) {
-    E.rowOff = E.cy - E.screenRows + 1;
-  }
-  if (E.cx < E.colOff) {
-    E.colOff = E.cx;
-  }
-  if (E.cx >= E.colOff + E.screenCols) {
-    E.colOff = E.cx - E.screenCols + 1;
-  }
 }

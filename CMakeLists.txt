@@ -21,6 +21,7 @@ set(FANO_SOURCES
     src/core.c
     src/editor.c
     src/terminal.c
+    src/screen.c
     src/main.c
 )
 
@@ -30,6 +31,7 @@ set(FANO_HEADERS
     include/core.h
     include/editor.h
     include/terminal.h
+    include/screen.h
 )
 
 #=============================#

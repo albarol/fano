@@ -72,3 +72,4 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 # End of Cmake
+tags

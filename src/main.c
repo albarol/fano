@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
   }
 
   while (1) {
-    Editor_RefreshScreen();
+    Screen_RefreshScreen();
     Editor_ProcessKeyPress();
   }
 
