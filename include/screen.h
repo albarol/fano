@@ -1,6 +1,7 @@
 #ifndef __FANO_SCREEN__
 #define __FANO_SCREEN__
 
+#include <stdarg.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <stdio.h>
@@ -16,5 +17,7 @@ int Screen_GetWindowSize(int *rows, int *cols);
 int Screen_GetCursorPosition(int *rows, int *cols);
 void Screen_MoveCursor(int key);
 void Screen_Scroll();
+void Screen_DrawStatusBar(struct buffer *pBuffer);
+void Screen_SetStatusMessage(const char* fmt, ...);
 
 #endif

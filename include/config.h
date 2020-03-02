@@ -2,6 +2,7 @@
 #define __FANO_CONFIG__
 
 #include <termios.h>
+#include <time.h>
 
 
 
@@ -20,7 +21,10 @@ struct editorConfig {
   int screenCols;
   int numRows;
   editorRow* rows;
+  int dirty;
   char* filename;
+  char statusMsg[80];
+  time_t statusMsgTime;
   struct termios orig_termios;
 };
 
@@ -28,6 +32,7 @@ struct editorConfig E;
 
 enum editorKey {
   BACKSPACE = 127,
+  TAB = 9,
   ARROW_LEFT = 1000,
   ARROW_RIGHT,
   ARROW_UP,

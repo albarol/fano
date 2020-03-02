@@ -12,6 +12,8 @@ int main(int argc, char *argv[]) {
     Editor_Open(argv[1]);
   }
 
+  Screen_SetStatusMessage("help: Ctrl-s = save | Ctrl-q = quit");
+
   while (1) {
     Screen_RefreshScreen();
     Editor_ProcessKeyPress();
