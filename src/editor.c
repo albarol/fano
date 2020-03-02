@@ -14,7 +14,7 @@ void Editor_Init() {
   E.statusMsgTime = 0;
 
   if (Screen_GetWindowSize(&E.screenRows, &E.screenCols) == -1) die("GetWindowSize");
-  E.screenRows -= 1;
+  E.screenRows -= 2;
 }
 
 void Editor_Open(char* filename) {
@@ -240,7 +240,7 @@ void Editor_ProcessKeyPress() {
 
     case CTRL_KEY('q'):
       if (E.dirty > 0) {
-        Screen_SetStatusMessage("Warning! File has unsaved changes. Press Ctrl+x to quit without save.");
+        Screen_SetStatusMessage("Warning! File has unsaved changes. Press Ctrl+x to quit without saving.");
         break;
       }
 	  refreshScreen();
@@ -367,7 +367,9 @@ char *Editor_Prompt(char *prompt) {
     Screen_RefreshScreen();
 
     int c = Editor_ReadKey();
-    if (c == '\x1b') {
+    if (c == DEL_KEY || c == CTRL_KEY('h') || c == BACKSPACE) {
+      if (bufLen != 0) buf[--bufLen] = '\0';
+    } else if(c == '\x1b') {
       Screen_SetStatusMessage("");
       free(buf);
       return NULL;

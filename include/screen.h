@@ -18,6 +18,7 @@ int Screen_GetCursorPosition(int *rows, int *cols);
 void Screen_MoveCursor(int key);
 void Screen_Scroll();
 void Screen_DrawStatusBar(struct buffer *pBuffer);
+void Screen_DrawMessageBar(struct buffer *pBuffer);
 void Screen_SetStatusMessage(const char* fmt, ...);
 
 #endif
