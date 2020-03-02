@@ -2,8 +2,7 @@
 #define __FANO_CONS__
 
 #define FANO_VERSION "0.0.1"
-#define FANO_TAB_STOP 8
-#define FANO_QUIT_TIMES 3
+#define FANO_TAB_STOP 4
 
 
 

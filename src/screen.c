@@ -33,6 +33,31 @@ int Screen_GetCursorPosition(int *rows, int *cols) {
   return 0;
 }
 
+
+int Screen_TransformToRenderPosition(editorRow* row, int cx) {
+  int rx = 0;
+  int j;
+  for (j = 0; j < cx; j++) {
+	if (row->chars[j] == '\t')
+	  rx += (FANO_TAB_STOP - 1) - (rx % FANO_TAB_STOP);
+	rx++;
+  }
+  return rx;
+}
+
+int Screen_TransformToCursorPosition(editorRow* row, int rx) {
+  int cur_rx = 0;
+  int cx;
+  for (cx = 0; cx < row->size; cx++) {
+	if (row->chars[cx] == '\t')
+	  cur_rx += (FANO_TAB_STOP - 1) - (cur_rx % FANO_TAB_STOP);
+	cur_rx++;
+
+	if (cur_rx > rx) return cx;
+  }
+  return cx;
+}
+
 void Screen_MoveCursor(int key) {
   editorRow *row = (E.cy >= E.numRows) ? NULL : &E.rows[E.cy];
 
@@ -73,6 +98,11 @@ void Screen_MoveCursor(int key) {
 }
 
 void Screen_Scroll() {
+  E.rx = 0;
+  if (E.cy < E.numRows) {
+    E.rx = Screen_TransformToRenderPosition(&E.rows[E.cy], E.cx);
+  }
+
   if (E.cy < E.rowOff) {
     E.rowOff = E.cy;
   }

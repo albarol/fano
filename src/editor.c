@@ -67,6 +67,26 @@ void Editor_Save() {
   Screen_SetStatusMessage("I/O error: %s", strerror(errno));
 }
 
+void Editor_Find() {
+  char* query = Editor_Prompt("Search: %s (ESC to cancel).");
+  if (query == NULL) return;
+
+  int i;
+  for (i = E.cy; i < E.numRows; i++) {
+    editorRow* row = &E.rows[i];
+    char *match = strstr(row->render, query);
+
+    if (match) {
+      E.cy = i;
+	  E.cx = Screen_TransformToCursorPosition(row, match - row->render);
+      E.rowOff = E.numRows;
+      break;
+    }
+  }
+
+  free(query);
+}
+
 
 void Editor_InsertRow(int at, char *s, size_t len) {
     if (at < 0 || at > E.numRows) return;
@@ -229,8 +249,6 @@ void Editor_DrawRows(struct buffer *pBuffer) {
 }
 
 void Editor_ProcessKeyPress() {
-  static int quit_times = FANO_QUIT_TIMES;
-
   int c = Editor_ReadKey();
 
   switch (c) {
@@ -250,6 +268,10 @@ void Editor_ProcessKeyPress() {
     case CTRL_KEY('x'):
       refreshScreen();
       exit(0);
+      break;
+
+    case CTRL_KEY('f'):
+      Editor_Find();
       break;
 
     case CTRL_KEY('s'):
