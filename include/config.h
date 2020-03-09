@@ -25,6 +25,7 @@ struct editorConfig {
   char* filename;
   char statusMsg[80];
   time_t statusMsgTime;
+  char* lastSearch;
   struct termios orig_termios;
 };
 

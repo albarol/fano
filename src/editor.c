@@ -12,6 +12,7 @@ void Editor_Init() {
   E.filename = NULL;
   E.statusMsg[0] = '\0';
   E.statusMsgTime = 0;
+  E.lastSearch = NULL;
 
   if (Screen_GetWindowSize(&E.screenRows, &E.screenCols) == -1) die("GetWindowSize");
   E.screenRows -= 2;
@@ -71,8 +72,14 @@ void Editor_Find() {
   char* query = Editor_Prompt("Search: %s (ESC to cancel).");
   if (query == NULL) return;
 
+  if (E.lastSearch) free(E.lastSearch);
+
+  size_t bufSize = 128;
+  E.lastSearch = malloc(bufSize);
+  strcpy(E.lastSearch, query);
+
   int i;
-  for (i = E.cy; i < E.numRows; i++) {
+  for (i = 0; i < E.numRows; i++) {
     editorRow* row = &E.rows[i];
     char *match = strstr(row->render, query);
 
@@ -85,6 +92,40 @@ void Editor_Find() {
   }
 
   free(query);
+}
+
+void Editor_FindNext() {
+  if (E.lastSearch == NULL) return;
+
+  int i;
+  for (i = E.cy + 1; i < E.numRows; i++) {
+    editorRow* row = &E.rows[i];
+    char *match = strstr(row->render, E.lastSearch);
+
+    if (match) {
+      E.cy = i;
+	  E.cx = Screen_TransformToCursorPosition(row, match - row->render);
+      E.rowOff = E.numRows;
+      break;
+    }
+  }
+}
+
+void Editor_FindPrevious() {
+  if (E.lastSearch == NULL) return;
+
+  int i;
+  for (i = E.cy - 1; i >= 0; i--) {
+    editorRow* row = &E.rows[i];
+    char *match = strstr(row->render, E.lastSearch);
+
+    if (match) {
+      E.cy = i;
+	  E.cx = Screen_TransformToCursorPosition(row, match - row->render);
+      E.rowOff = E.numRows;
+      break;
+    }
+  }
 }
 
 
@@ -272,6 +313,14 @@ void Editor_ProcessKeyPress() {
 
     case CTRL_KEY('f'):
       Editor_Find();
+      break;
+
+    case CTRL_KEY('n'):
+      Editor_FindNext();
+      break;
+
+    case CTRL_KEY('p'):
+      Editor_FindPrevious();
       break;
 
     case CTRL_KEY('s'):

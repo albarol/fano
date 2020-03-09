@@ -23,6 +23,8 @@ void Editor_Init();
 void Editor_Open(char* filename);
 void Editor_Save();
 void Editor_Find();
+void Editor_FindNext();
+void Editor_FindPrevious();
 
 void Editor_InsertRow(int at, char *s, size_t len);
 void Editor_UpdateRow(editorRow *row);
